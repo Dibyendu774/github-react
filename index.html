@@ -708,6 +708,10 @@
             SCORE_FINISH: 150,
             PRACTICE_MODE_SAFE: true,
 
+            PRACTICE_WARNING_MIN_DELAY: 1.5,
+            PRACTICE_WARNING_MAX_DELAY: 3.5,
+            PRACTICE_WARNING_DURATION: 2.5,
+
             // Highscore key
             HS_KEY: 'glassBridge3D_highscore_v1'
         };
@@ -1031,6 +1035,7 @@
                 this.glow = null;
                 this.shakeTimer = 0;
                 this.originalPos = new THREE.Vector3();
+                this.practiceWarning = false;
 
                 this._build();
             }
@@ -1117,6 +1122,25 @@
                 if (this.mesh && !this.broken) {
                     this.mesh.material.emissive = new THREE.Color(on ? 0x004422 : 0x000000);
                     this.mesh.material.emissiveIntensity = on ? 0.25 : 0;
+                }
+            }
+
+            setPracticeWarning(on) {
+                this.practiceWarning = on;
+
+                if (this.border && !this.broken) {
+                    this.border.material.color.setHex(on ? 0xff3355 : 0x88ccff);
+                    this.border.material.opacity = on ? 1.0 : 0.7;
+                }
+
+                if (this.mesh && !this.broken) {
+                    this.mesh.material.emissive = new THREE.Color(on ? 0x550011 : 0x000000);
+                    this.mesh.material.emissiveIntensity = on ? 0.55 : 0;
+                }
+
+                if (this.glow && !this.broken) {
+                    this.glow.material.color.setHex(on ? 0xff1133 : 0x44aaff);
+                    this.glow.material.opacity = on ? 0.22 : 0.08;
                 }
             }
 
@@ -1837,6 +1861,7 @@
                 this.mode = 'normal';
                 this.score = 0;
                 this.highscore = this._loadHighscore();
+                this.practiceWarningTimeout = null;
                 this.selectedSide = 0;
                 this.clock = new THREE.Clock();
                 this.landedRows = new Set();
@@ -2098,6 +2123,10 @@
             }
 
             startGame(mode) {
+                if (this.practiceWarningTimeout) {
+                    clearTimeout(this.practiceWarningTimeout);
+                    this.practiceWarningTimeout = null;
+                }
                 this.mode = mode;
                 this.score = 0;
                 this.landedRows.clear();
@@ -2130,6 +2159,53 @@
                 this.ui.setSelectedSide(0);
                 this.ui.showSideControls(true);
                 this.ui.showMessage(mode === 'practice' ? 'PRACTICE MODE' : 'GOOD LUCK', 'info', 1500);
+                if (mode === 'practice') {
+                    this._startPracticeWarnings();
+                }
+            }
+
+            _startPracticeWarnings() {
+                if (this.mode !== 'practice' || this.state !== 'playing') {
+                    return;
+                }
+
+                const delay = Utils.rand(
+                    CONFIG.PRACTICE_WARNING_MIN_DELAY,
+                    CONFIG.PRACTICE_WARNING_MAX_DELAY
+                ) * 1000;
+
+                this.practiceWarningTimeout = setTimeout(() => {
+                    if (this.mode !== 'practice' || this.state !== 'playing') {
+                        return;
+                    }
+
+                    const currentRow = this.player.row;
+
+                    const minRow = Math.max(0, currentRow + 1);
+                    const maxRow = Math.min(
+                        CONFIG.NUM_ROWS - 1,
+                        currentRow + 4
+                    );
+
+                    if (minRow <= maxRow) {
+                        const row = Utils.randInt(minRow, maxRow);
+                        const side = Utils.randInt(0, 1);
+
+                        const tile = this.bridge.getTile(row, side);
+
+                        if (tile && !tile.broken) {
+                            tile.setPracticeWarning(true);
+
+                            setTimeout(() => {
+                                if (tile && !tile.broken) {
+                                    tile.setPracticeWarning(false);
+                                }
+                            }, CONFIG.PRACTICE_WARNING_DURATION * 1000);
+                        }
+                    }
+
+                    this._startPracticeWarnings();
+                }, delay);
             }
 
             tryJump() {
