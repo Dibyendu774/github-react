@@ -2159,9 +2159,9 @@
                 this.ui.setSelectedSide(0);
                 this.ui.showSideControls(true);
                 this.ui.showMessage(mode === 'practice' ? 'PRACTICE MODE' : 'GOOD LUCK', 'info', 1500);
-                if (mode === 'practice') {
-                    this._startPracticeWarnings();
-                }
+                // if (mode === 'practice') {
+                //     this._startPracticeWarnings();
+                // }
             }
 
             _startPracticeWarnings() {
@@ -2229,10 +2229,41 @@
                     return;
                 }
 
-                const tilePos = this.bridge.getTileWorldPos(nextRow, this.selectedSide);
-                if (!tilePos) return;
+                // const tilePos = this.bridge.getTileWorldPos(nextRow, this.selectedSide);
+                // if (!tilePos) return;
 
-                const success = this.player.startJump(tilePos.x, 0, tilePos.z, this.selectedSide);
+                // const success = this.player.startJump(tilePos.x, 0, tilePos.z, this.selectedSide);
+                // if (success) {
+                //     this.player.row = nextRow;
+                //     this.canJump = false;
+                //     this.pendingLandingCheck = true;
+                //     this.audio.playJump();
+                // }
+                const tile = this.bridge.getTile(nextRow, this.selectedSide);
+
+                if (!tile) {
+                    return;
+                }
+
+                const tilePos = tile.group.position;
+
+                const success = this.player.startJump(
+                    tilePos.x,
+                    0,
+                    tilePos.z,
+                    this.selectedSide
+                );
+
+                if (success && this.mode === 'practice' && !tile.isSafe) {
+                    tile.setPracticeWarning(true);
+
+                    setTimeout(() => {
+                        if (tile && !tile.broken) {
+                            tile.setPracticeWarning(false);
+                        }
+                    }, CONFIG.PRACTICE_WARNING_DURATION * 1000);
+                }
+
                 if (success) {
                     this.player.row = nextRow;
                     this.canJump = false;
