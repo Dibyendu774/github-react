@@ -541,7 +541,43 @@
             letter-spacing: 0.05em;
             z-index: 6;
         }
-    </style>
+        .mobile-jump-btn {
+            display: none;
+            position: absolute;
+            right: 22px;
+            bottom: 28px;
+            width: 100px;
+            height: 64px;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 16px;
+            background: rgba(15, 25, 45, 0.9);
+            color: var(--accent-cyan);
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+            backdrop-filter: blur(12px);
+            pointer-events: auto;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            z-index: 20;
+        }
+
+        .mobile-jump-btn:active {
+            transform: scale(0.92);
+            background: rgba(0, 240, 255, 0.2);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
+        }
+
+        @media (max-width: 600px) {
+            .mobile-jump-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+            </style>
 </head>
 <body>
     <div id="game-container">
@@ -592,6 +628,9 @@
                 <div class="side-btn selected" id="side-left" data-side="0">L</div>
                 <div class="side-btn" id="side-right" data-side="1">R</div>
             </div>
+            <button class="mobile-jump-btn" id="mobile-jump-btn" type="button">
+                JUMP ↑
+            </button>
             <div class="jump-hint" id="jump-hint">Press SPACE to jump</div>
             <div class="message-banner" id="message-banner"></div>
             <div class="progress-container" id="progress-container">
@@ -1964,8 +2003,13 @@
             _bindEvents() {
                 window.addEventListener('keydown', this._onKeyDown);
                 window.addEventListener('resize', this._onResize);
+                const mobileJumpBtn = document.getElementById('mobile-jump-btn');
 
                 // Menu buttons
+                mobileJumpBtn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    this.tryJump();
+                });
                 document.getElementById('btn-play-normal').addEventListener('click', () => {
                     this.audio.init();
                     this.startGame('normal');
